@@ -13,7 +13,7 @@ from utils.exporter import ExcelExporter
 
 st.set_page_config(page_title="Cuanku", layout="wide", page_icon="📊")
 
-# ── Init ──
+# ─ Init ──
 db = DatabaseManager()
 downloader = YFDownloader(db)
 scorer = CompositeScorer()
@@ -25,7 +25,7 @@ exporter = ExcelExporter(db)
 st.sidebar.title("📊 Cuanku")
 menu = st.sidebar.radio("Menu", [
     "🔍 Screener", "⭐ Watchlist", "💼 Portfolio",
-    "📓 Journal", "🔔 Alerts", "⚙️ Data Manager", "📤 Export"
+    "📓 Journal", "🔔 Alerts", "️ Data Manager", "📤 Export"
 ])
 
 # ═══════════════════════════════════════════════════════
@@ -53,7 +53,6 @@ if menu == "🔍 Screener":
         st.metric("Saham memenuhi kriteria", len(df_screen))
         st.dataframe(df_screen, use_container_width=True, hide_index=True)
         
-        # Chart top pick
         top = df_screen.iloc[0]
         st.subheader(f"📈 {top['ticker']} | Score: {top['composite_score']} | {top['signals']}")
         df_price = db.get_prices(top["ticker"], limit=120)
@@ -66,12 +65,10 @@ if menu == "🔍 Screener":
                 name="Candlestick"
             )])
             
-            # Add EMA20
             fig.add_trace(go.Scatter(
                 x=df_price["date"], 
                 y=df_price["close"].ewm(span=20).mean(),
-                mode="lines", 
-                name="EMA20", 
+                mode="lines", name="EMA20", 
                 line=dict(color="orange", width=1)
             ))
             
@@ -118,9 +115,8 @@ elif menu == "⭐ Watchlist":
             st.dataframe(wl[cols_to_show], use_container_width=True, hide_index=True)
         else:
             st.dataframe(wl, use_container_width=True, hide_index=True)
-            st.info(" Belum ada data harga. Download data di menu Data Manager untuk melihat harga terbaru.")
+            st.info("️ Belum ada data harga. Download data di menu Data Manager untuk melihat harga terbaru.")
         
-        # Hapus
         to_remove = st.selectbox("Hapus dari watchlist", wl["ticker"].tolist())
         if st.button("🗑️ Hapus", type="secondary"):
             db.delete_watchlist(to_remove)
@@ -130,11 +126,10 @@ elif menu == "⭐ Watchlist":
 
 # ═══════════════════════════════════════════════════════
 # 3. PORTFOLIO
-# ═══════════════════════════════════════════════════════
-elif menu == "💼 Portfolio":
+# ══════════════════════════════════════════════════════
+elif menu == " Portfolio":
     st.title("💼 Portfolio Tracker")
     
-    # ── Summary Cards ──
     summary = portfolio.get_summary()
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Total Value", f"Rp {summary['total_value']:,.0f}")
@@ -144,7 +139,6 @@ elif menu == "💼 Portfolio":
     c4.metric("Win Rate", f"{summary['win_rate']:.0f}%")
     c5.metric("Positions", summary["positions"])
     
-    # ── Buy / Sell Form ──
     tab_buy, tab_sell = st.tabs(["🟢 Beli", " Jual"])
     
     with tab_buy:
@@ -157,7 +151,7 @@ elif menu == "💼 Portfolio":
             p_price = st.number_input("Harga per Saham", min_value=1, value=4500, step=10, key="buy_p")
         
         if st.button("Execute BUY", type="primary"):
-            portfolio.buy(p_ticker, p_shares * 100, p_price)  # 1 lot = 100 shares
+            portfolio.buy(p_ticker, p_shares * 100, p_price)
             st.success(f"Beli {p_shares} lot {p_ticker} @ {p_price}")
     
     with tab_sell:
@@ -181,7 +175,6 @@ elif menu == "💼 Portfolio":
         else:
             st.info("Tidak ada posisi untuk dijual.")
     
-    # ── Holdings Table ──
     st.subheader("Holdings")
     df_pos = portfolio.get_df()
     
@@ -198,10 +191,10 @@ elif menu == "💼 Portfolio":
 # ═══════════════════════════════════════════════════════
 # 4. TRADING JOURNAL
 # ═══════════════════════════════════════════════════════
-elif menu == "📓 Journal":
-    st.title(" Trading Journal")
+elif menu == " Journal":
+    st.title("📓 Trading Journal")
     
-    with st.expander("➕ Entry Baru"):
+    with st.expander(" Entry Baru"):
         c1, c2, c3 = st.columns(3)
         with c1:
             j_date = st.date_input("Tanggal", date.today())
@@ -225,7 +218,6 @@ elif menu == "📓 Journal":
             )
             st.success("Journal tersimpan!")
     
-    # Stats
     stats = journal.stats()
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total Trades", int(stats["trades"]))
@@ -237,10 +229,8 @@ elif menu == "📓 Journal":
     
     if not df_j.empty:
         st.dataframe(df_j, use_container_width=True, hide_index=True)
-        
-        # Delete
         del_id = st.number_input("Hapus ID", min_value=1, step=1)
-        if st.button("🗑️ Hapus Entry"):
+        if st.button("️ Hapus Entry"):
             journal.delete(del_id)
             st.rerun()
     else:
@@ -248,8 +238,8 @@ elif menu == "📓 Journal":
 
 # ═══════════════════════════════════════════════════════
 # 5. ALERTS
-# ══════════════════════════════════════════════════════
-elif menu == " Alerts":
+# ═══════════════════════════════════════════════════════
+elif menu == "🔔 Alerts":
     st.title("🔔 Price & Indicator Alerts")
     
     with st.expander("➕ Buat Alert Baru"):
@@ -271,7 +261,7 @@ elif menu == " Alerts":
         triggered = alerts.check_all()
         if triggered:
             for t in triggered:
-                st.success(f" {t['ticker']} — {t['condition']} terpenuhi! (Target: {t['target']}, Now: {t['price_now']})")
+                st.success(f"🚨 {t['ticker']} — {t['condition']} terpenuhi! (Target: {t['target']}, Now: {t['price_now']})")
         else:
             st.info("Tidak ada alert yang ter-trigger saat ini.")
     
@@ -280,19 +270,18 @@ elif menu == " Alerts":
     if not df_al.empty:
         st.subheader("Active Alerts")
         st.dataframe(df_al, use_container_width=True, hide_index=True)
-        
         del_a = st.number_input("Hapus Alert ID", min_value=1, step=1)
-        if st.button("️ Hapus Alert"):
+        if st.button("🗑️ Hapus Alert"):
             alerts.delete(del_a)
             st.rerun()
     else:
         st.info("Tidak ada alert aktif.")
 
-# ═══════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════
 # 6. DATA MANAGER
 # ═══════════════════════════════════════════════════════
-elif menu == "️ Data Manager":
-    st.title("️ Data Manager")
+elif menu == "⚙️ Data Manager":
+    st.title("⚙️ Data Manager")
     
     tickers_input = st.text_area("Tickers (pisah koma)", "BBRI.JK, BBCA.JK, TLKM.JK, ANTM.JK, ASII.JK")
     tickers = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
@@ -314,7 +303,7 @@ elif menu == "️ Data Manager":
             st.success("Download & indikator selesai!")
     
     with c2:
-        if st.button(" Clear Database"):
+        if st.button("🧹 Clear Database"):
             import os
             if os.path.exists(db.db_path):
                 os.remove(db.db_path)
@@ -326,11 +315,11 @@ elif menu == "️ Data Manager":
     df_p = db.get_prices(preview_ticker, limit=10)
     st.dataframe(df_p, use_container_width=True)
 
-# ═══════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════
 # 7. EXPORT
 # ═══════════════════════════════════════════════════════
 elif menu == "📤 Export":
-    st.title(" Export Data")
+    st.title("📤 Export Data")
     
     c1, c2 = st.columns(2)
     with c1:
