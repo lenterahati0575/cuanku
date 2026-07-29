@@ -101,24 +101,28 @@ elif menu == "⭐ Watchlist":
     
     wl = db.get_watchlist()
     
-    if not wl.empty:
-        prices = db.get_all_latest_prices()[["ticker", "close"]]
-        wl = wl.merge(prices, on="ticker", how="left")
-        wl["gap_to_target"] = wl.apply(
-            lambda r: f"{((r['target_price'] - r['close'])/r['close']*100):.1f}%" 
-            if pd.notna(r.get("target_price")) and r.get("close") else "-", 
-            axis=1
-        )
+    if not wl.empty and "ticker" in wl.columns:
+        prices = db.get_all_latest_prices()
         
-        st.dataframe(
-            wl[["ticker", "notes", "target_price", "close", "gap_to_target", "added_date"]],
-            use_container_width=True, 
-            hide_index=True
-        )
+        if not prices.empty and "ticker" in prices.columns and "close" in prices.columns:
+            wl = wl.merge(prices[["ticker", "close"]], on="ticker", how="left")
+            wl["gap_to_target"] = wl.apply(
+                lambda r: f"{((r['target_price'] - r['close'])/r['close']*100):.1f}%" 
+                if pd.notna(r.get("target_price")) and pd.notna(r.get("close")) and r['close'] != 0 
+                else "-", 
+                axis=1
+            )
+            
+            cols_to_show = ["ticker", "notes", "target_price", "close", "gap_to_target", "added_date"]
+            cols_to_show = [c for c in cols_to_show if c in wl.columns]
+            st.dataframe(wl[cols_to_show], use_container_width=True, hide_index=True)
+        else:
+            st.dataframe(wl, use_container_width=True, hide_index=True)
+            st.info(" Belum ada data harga. Download data di menu Data Manager untuk melihat harga terbaru.")
         
         # Hapus
         to_remove = st.selectbox("Hapus dari watchlist", wl["ticker"].tolist())
-        if st.button("️ Hapus", type="secondary"):
+        if st.button("🗑️ Hapus", type="secondary"):
             db.delete_watchlist(to_remove)
             st.rerun()
     else:
