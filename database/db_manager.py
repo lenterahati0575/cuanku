@@ -43,9 +43,12 @@ class DatabaseManager:
             if not response.data:
                 return pd.DataFrame()
             df = pd.DataFrame(response.data)
-            if not df.empty and "date" in df.columns:
-                df = df.sort_values("date", ascending=False)
-                df = df.drop_duplicates(subset=["ticker"], keep="first")
+            if not df.empty:
+                # Normalisasi nama kolom (hapus spasi jika ada)
+                df.columns = df.columns.str.strip()
+                if "date" in df.columns and "ticker" in df.columns:
+                    df = df.sort_values("date", ascending=False)
+                    df = df.drop_duplicates(subset=["ticker"], keep="first")
             return df
         except Exception as e:
             st.error(f"Error get_all_latest_prices: {e}")
@@ -97,7 +100,9 @@ class DatabaseManager:
             response = self.supabase.table("watchlist").select("*").execute()
             if not response.data:
                 return pd.DataFrame()
-            return pd.DataFrame(response.data)
+            df = pd.DataFrame(response.data)
+            df.columns = df.columns.str.strip()
+            return df
         except Exception as e:
             st.error(f"Error get_watchlist: {e}")
             return pd.DataFrame()
