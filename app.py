@@ -118,7 +118,7 @@ elif menu == "⭐ Watchlist":
         
         # Hapus
         to_remove = st.selectbox("Hapus dari watchlist", wl["ticker"].tolist())
-        if st.button("🗑️ Hapus", type="secondary"):
+        if st.button("️ Hapus", type="secondary"):
             db.delete_watchlist(to_remove)
             st.rerun()
     else:
@@ -245,7 +245,7 @@ elif menu == "📓 Journal":
 # ═══════════════════════════════════════════════════════
 # 5. ALERTS
 # ══════════════════════════════════════════════════════
-elif menu == "🔔 Alerts":
+elif menu == " Alerts":
     st.title("🔔 Price & Indicator Alerts")
     
     with st.expander("➕ Buat Alert Baru"):
@@ -267,7 +267,7 @@ elif menu == "🔔 Alerts":
         triggered = alerts.check_all()
         if triggered:
             for t in triggered:
-                st.success(f"🚨 {t['ticker']} — {t['condition']} terpenuhi! (Target: {t['target']}, Now: {t['price_now']})")
+                st.success(f" {t['ticker']} — {t['condition']} terpenuhi! (Target: {t['target']}, Now: {t['price_now']})")
         else:
             st.info("Tidak ada alert yang ter-trigger saat ini.")
     
@@ -278,7 +278,7 @@ elif menu == "🔔 Alerts":
         st.dataframe(df_al, use_container_width=True, hide_index=True)
         
         del_a = st.number_input("Hapus Alert ID", min_value=1, step=1)
-        if st.button("🗑️ Hapus Alert"):
+        if st.button("️ Hapus Alert"):
             alerts.delete(del_a)
             st.rerun()
     else:
@@ -287,8 +287,8 @@ elif menu == "🔔 Alerts":
 # ═══════════════════════════════════════════════════════
 # 6. DATA MANAGER
 # ═══════════════════════════════════════════════════════
-elif menu == "⚙️ Data Manager":
-    st.title("⚙️ Data Manager")
+elif menu == "️ Data Manager":
+    st.title("️ Data Manager")
     
     tickers_input = st.text_area("Tickers (pisah koma)", "BBRI.JK, BBCA.JK, TLKM.JK, ANTM.JK, ASII.JK")
     tickers = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
@@ -310,7 +310,7 @@ elif menu == "⚙️ Data Manager":
             st.success("Download & indikator selesai!")
     
     with c2:
-        if st.button("🧹 Clear Database"):
+        if st.button(" Clear Database"):
             import os
             if os.path.exists(db.db_path):
                 os.remove(db.db_path)
@@ -326,7 +326,7 @@ elif menu == "⚙️ Data Manager":
 # 7. EXPORT
 # ═══════════════════════════════════════════════════════
 elif menu == "📤 Export":
-    st.title("📤 Export Data")
+    st.title(" Export Data")
     
     c1, c2 = st.columns(2)
     with c1:
