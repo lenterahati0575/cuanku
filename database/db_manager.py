@@ -5,134 +5,84 @@ from supabase import create_client, Client
 
 @st.cache_resource
 def get_supabase_client() -> Client:
-    """Inisialisasi koneksi Supabase menggunakan secrets"""
     url = st.secrets["supabase"]["url"]
     key = st.secrets["supabase"]["key"]
     return create_client(url, key)
 
 class DatabaseManager:
     def __init__(self):
-        self.supabase: Client = get_supabase_client()
-        self.db_path = "supabase"  # Dummy untuk kompatibilitas
-    
+        self.supabase = get_supabase_client()
+        self.db_path = "supabase"
+
     def _connect(self):
-        """Dummy method agar kode with db._connect() tidak error"""
         class MockConn:
-            def __enter__(self): 
+            def __enter__(self):
                 return self
-            def __exit__(self, *args): 
+            def __exit__(self, *args):
                 pass
-            def execute(self, *args): 
+            def execute(self, *args):
                 raise NotImplementedError("Gunakan method bawaan class ini")
         return MockConn()
 
-    def get_prices(self, ticker: str, limit: int = 500) -> pd.DataFrame:
-        """Ambil data harga untuk ticker tertentu"""
+    def get_prices(self, ticker, limit=500):
         try:
-            # Query tanpa .order() - kita sort manual di Python
-            response = self.supabase.table("price_data") \
-                .select("*") \
-                .eq("ticker", ticker) \
-                .execute()
-            
+            response = self.supabase.table("price_data").select("*").eq("ticker", ticker).execute()
             if not response.data:
                 return pd.DataFrame()
-            
             df = pd.DataFrame(response.data)
-            
-            # Sort descending by date dan limit
-            if not df.empty and 'date' in df.columns:
+            if not df.empty and "date" in df.columns:
                 df = df.sort_values("date", ascending=False).head(limit)
-            
             return df
-            
         except Exception as e:
-            st.error(f"Error fetching prices for {ticker}: {str(e)}")
+            st.error(f"Error get_prices: {e}")
             return pd.DataFrame()
 
-    def get_all_latest_prices(self) -> pd.DataFrame:
-        """Ambil harga terbaru semua saham"""
+    def get_all_latest_prices(self):
         try:
-            # Query sederhana tanpa .order() yang bermasalah
-            response = self.supabase.table("price_data") \
-                .select("ticker, date, close") \
-                .execute()
-            
+            response = self.supabase.table("price_data").select("ticker, date, close").execute()
             if not response.data:
                 return pd.DataFrame()
-            
             df = pd.DataFrame(response.data)
-            
-            # Sort dan ambil yang terbaru per ticker di Python
-            if not df.empty and 'date' in df.columns:
+            if not df.empty and "date" in df.columns:
                 df = df.sort_values("date", ascending=False)
                 df = df.drop_duplicates(subset=["ticker"], keep="first")
-            
             return df
-            
         except Exception as e:
-            st.error(f"Error fetching latest prices: {str(e)}")
+            st.error(f"Error get_all_latest_prices: {e}")
             return pd.DataFrame()
 
-    def get_indicators(self, ticker: str, limit: int = 100) -> pd.DataFrame:
-        """Ambil data indikator untuk ticker tertentu"""
+    def get_indicators(self, ticker, limit=100):
         try:
-            response = self.supabase.table("indicators") \
-                .select("*") \
-                .eq("ticker", ticker) \
-                .execute()
-            
+            response = self.supabase.table("indicators").select("*").eq("ticker", ticker).execute()
             if not response.data:
                 return pd.DataFrame()
-            
             df = pd.DataFrame(response.data)
-            
-            # Sort descending by date dan limit
-            if not df.empty and 'date' in df.columns:
+            if not df.empty and "date" in df.columns:
                 df = df.sort_values("date", ascending=False).head(limit)
-            
             return df
-            
         except Exception as e:
-            st.error(f"Error fetching indicators for {ticker}: {str(e)}")
+            st.error(f"Error get_indicators: {e}")
             return pd.DataFrame()
 
-    def get_latest_scores(self, min_score: float = 0, sector: str = None, limit: int = 100) -> pd.DataFrame:
-        """Ambil score terbaru dengan filtering"""
+    def get_latest_scores(self, min_score=0, sector=None, limit=100):
         try:
-            # Build query dasar
             query = self.supabase.table("scores").select("*")
-            
-            # Filter min_score
             if min_score > 0:
                 query = query.gte("composite_score", min_score)
-            
-            # Filter sector
             if sector and sector != "All":
                 query = query.eq("sector", sector)
-            
-            # Execute query TANPA .order() - sort manual di Python
             response = query.execute()
-            
-            # Check jika data kosong
             if not response.data:
                 return pd.DataFrame()
-            
-            # Convert ke DataFrame
             df = pd.DataFrame(response.data)
-            
-            # Sort descending by composite_score dan limit
-            if not df.empty and 'composite_score' in df.columns:
+            if not df.empty and "composite_score" in df.columns:
                 df = df.sort_values("composite_score", ascending=False).head(limit)
-            
             return df
-            
         except Exception as e:
-            st.error(f"Error fetching scores: {str(e)}")
+            st.error(f"Error get_latest_scores: {e}")
             return pd.DataFrame()
 
-    def add_watchlist(self, ticker: str, notes: str = None, target_price: float = None):
-        """Tambah ke watchlist"""
+    def add_watchlist(self, ticker, notes=None, target_price=None):
         try:
             self.supabase.table("watchlist").insert({
                 "ticker": ticker,
@@ -140,9 +90,72 @@ class DatabaseManager:
                 "target_price": target_price
             }).execute()
         except Exception as e:
-            st.error(f"Error adding watchlist: {str(e)}")
+            st.error(f"Error add_watchlist: {e}")
 
-    def get_watchlist(self) -> pd.DataFrame:
-        """Ambil watchlist"""
+    def get_watchlist(self):
         try:
-           
+            response = self.supabase.table("watchlist").select("*").execute()
+            if not response.data:
+                return pd.DataFrame()
+            return pd.DataFrame(response.data)
+        except Exception as e:
+            st.error(f"Error get_watchlist: {e}")
+            return pd.DataFrame()
+
+    def delete_watchlist(self, ticker):
+        try:
+            self.supabase.table("watchlist").delete().eq("ticker", ticker).execute()
+        except Exception as e:
+            st.error(f"Error delete_watchlist: {e}")
+
+    def get_fundamentals(self):
+        try:
+            response = self.supabase.table("fundamentals").select("*").execute()
+            if not response.data:
+                return pd.DataFrame()
+            return pd.DataFrame(response.data)
+        except Exception as e:
+            st.error(f"Error get_fundamentals: {e}")
+            return pd.DataFrame()
+
+    def get_backtests(self):
+        try:
+            response = self.supabase.table("backtests").select("*").execute()
+            if not response.data:
+                return pd.DataFrame()
+            return pd.DataFrame(response.data)
+        except Exception as e:
+            st.error(f"Error get_backtests: {e}")
+            return pd.DataFrame()
+
+    def save_indicators(self, df, ticker):
+        try:
+            records = df.to_dict(orient="records")
+            for row in records:
+                row["ticker"] = ticker
+            if records:
+                self.supabase.table("indicators").upsert(records, on_conflict="ticker,date").execute()
+        except Exception as e:
+            st.error(f"Error save_indicators: {e}")
+
+    def save_prices(self, df, ticker):
+        try:
+            records = df.to_dict(orient="records")
+            for row in records:
+                row["ticker"] = ticker
+            if records:
+                self.supabase.table("price_data").upsert(records, on_conflict="ticker,date").execute()
+        except Exception as e:
+            st.error(f"Error save_prices: {e}")
+
+    def save_score(self, ticker, date, composite_score, signals, sector=None):
+        try:
+            self.supabase.table("scores").upsert({
+                "ticker": ticker,
+                "date": date,
+                "composite_score": composite_score,
+                "signals": signals,
+                "sector": sector
+            }, on_conflict="ticker,date").execute()
+        except Exception as e:
+            st.error(f"Error save_score: {e}")
