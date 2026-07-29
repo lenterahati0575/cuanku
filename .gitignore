@@ -1,0 +1,26 @@
+# Environment & secrets — JANGAN pernah di-push (berisi API key)
+.env
+
+# Virtual environment
+venv/
+env/
+
+# Database & cache — data pribadi, tidak perlu ikut di-push
+data/*.db
+data/cache/
+*.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# File PDF/Excel hasil generate (bukan source code)
+*.pdf
+*.xlsx
+!requirements.txt
+
+# OS/Editor
+.DS_Store
+.vscode/
+.idea/
